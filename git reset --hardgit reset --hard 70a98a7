@@ -1,0 +1,20 @@
+[33m72565b6[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m test
+[33m70a98a7[m Made it so that users can use google to sign in
+[33md42e210[m Downloaded missing dependencies that was stopping the site from being deployed to vercel, also fixed some lint errors
+[33m8bc5814[m updated read me
+[33m08a87c0[m Fixed some errors that was causing the vercel deploymemt to fail
+[33me576e74[m fixed the hovering on the site
+[33m1c4fbb9[m Updated logo and fixed a mobile version of the site better
+[33m612b190[m Did some changes to the mobile side of the site, updated the read me to show the logo of the site
+[33m3d73110[m updated the mobile side of things, increased the size of the logo
+[33mbdeb828[m minor mobile friendly changes
+[33m21c3add[m Merge branch 'main' of https://github.com/MO-fr/BuzzBeam
+[33m15829a9[m Updated logo and fixed a mobile version of the site better
+[33m878248e[m Update README.md
+[33m17b3337[m Added a lgo and updated the readME
+[33mc786d2a[m Improved the UI of the profile page
+[33ma61d76c[m Fixed a bug with the left side bar, had a issue with the  ' All platforms and Last x amount of days' dropdown where there was no background and you could see everything behind it,and so i added a glass like transparent background
+[33mf629611[m Merge branch 'main' of https://github.com/MO-fr/BuzzBeam
+[33mc57f49e[m significantly improved the ui of the site and added padding and space in the cards, making the ui look cleaner, also changed the name at the top left corner from social dashboard to buzz beam, a name i made up and thought was cool
+[33m0be4fda[m Create README.md
+[33ma1347b8[m first commit
