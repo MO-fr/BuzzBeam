@@ -1,8 +1,7 @@
 'use server'
 
 import { getServerSession } from "next-auth"
-
-import { db } from '@/lib/db'
+import { connect } from '@/lib/db'
 import Analytics from '@/models/Analytics'
 
 export async function getAnalytics(platform, timeframe) {
@@ -12,7 +11,7 @@ export async function getAnalytics(platform, timeframe) {
       return { success: false, error: 'Authentication required' }
     }
 
-    await db.connect()
+    await connect()
 
     let query = { userId: session.user.id }
     if (platform && platform !== 'all') {
