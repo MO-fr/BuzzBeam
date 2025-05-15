@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { usePathname } from "next/navigation"
-import { useTheme } from "@/components/theme-provider"
+import { useTheme } from "@/components/providers/theme-provider"
 
 export function PageTransition({ children }) {
   const pathname = usePathname()

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Moon } from "lucide-react"
-import { useTheme } from "@/components/theme-provider"
+import { useTheme } from "@/components/providers/theme-provider"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 

@@ -1,82 +1,103 @@
 import NextAuth from "next-auth"
-import CredentialsProvider from "next-auth/providers/credentials"
 import GoogleProvider from "next-auth/providers/google"
-import bcrypt from "bcryptjs"
+import { connect } from "@/lib/db"
 import { User } from "@/models/User"
-import { db } from "@/lib/db"
+
+if (!process.env.NEXTAUTH_SECRET) {
+  throw new Error('NEXTAUTH_SECRET is not defined. Please check your environment variables.')
+}
 
 const authOptions = {
   providers: [
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-    CredentialsProvider({
-      name: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Invalid credentials")
-        }
-
-        await db.connect()
-        const user = await User.findOne({ email: credentials.email })
-        
-        if (!user || !user.password) {
-          throw new Error("Invalid credentials")
-        }
-
-        const isValid = await bcrypt.compare(credentials.password, user.password)
-        if (!isValid) {
-          throw new Error("Invalid credentials") 
-        }
-
-        return {
-          id: user._id.toString(),
-          email: user.email,
-          name: user.name,
-          image: user.image
-        }
-      }
     })
   ],
+  // Explicitly configure session handling
   session: {
-    strategy: "jwt",
+    strategy: 'jwt',
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
+  // Explicitly set the secret
+  secret: process.env.NEXTAUTH_SECRET,
   callbacks: {
+    async signIn({ user, account }) {
+      if (account.provider === "google") {
+        try {
+          await connect()
+          
+          // Check if user already exists
+          const existingUser = await User.findOne({ email: user.email })
+          
+          if (existingUser) {
+            // Update user's information if needed
+            existingUser.name = user.name
+            existingUser.image = user.image
+            await existingUser.save()
+            return true
+          }
+          
+          // Create new user if they don't exist
+          await User.create({
+            name: user.name,
+            email: user.email,
+            image: user.image,
+            connectedAccounts: {
+              google: true
+            }
+          })
+          
+          return true
+        } catch (error) {
+          console.error("Error saving user to MongoDB:", error)
+          return false
+        }
+      }
+      return true
+    },
+    async session({ session }) {
+      try {
+        await connect()
+        
+        // Fetch user from database and add any additional fields to session
+        const user = await User.findOne({ email: session.user.email })
+        
+        if (user) {
+          session.user.id = user._id.toString()
+          session.user.role = user.role
+          session.user.connectedAccounts = user.connectedAccounts
+        }
+        
+        return session
+      } catch (error) {
+        console.error("Error fetching user session data:", error)
+        return session
+      }
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        token.role = user.role
       }
       return token
-    },
-    async session({ session, token }) {
-      if (token) {
-        session.user.id = token.id
-      }
-      return session
     }
   },
-  cookies: process.env.NODE_ENV === "production" ? {
+  pages: {
+    signIn: '/auth/login',
+    error: '/auth/error'
+  },
+  // Additional security options
+  cookies: {
     sessionToken: {
-      name: `__Secure-next-auth.session-token`,
+      name: process.env.NODE_ENV === 'production' ? '__Secure-next-auth.session-token' : 'next-auth.session-token',
       options: {
         httpOnly: true,
-        sameSite: "lax",
-        path: "/",
-        secure: true,
-      },
-    },
-  } : {},
-  useSecureCookies: process.env.NODE_ENV === "production",
-  pages: {
-    signIn: "/auth/login",
-    error: "/auth/error",
-    signOut: "/auth/logout",
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production'
+      }
+    }
   }
 }
 

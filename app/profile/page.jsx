@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,203 +8,327 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { Facebook, Instagram, Twitter } from "lucide-react"
-import { userData } from "@/lib/mock-data"
+import { AlertCircle, Camera, Facebook, Instagram, Twitter } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { cn } from "@/lib/utils"
+import { useSession } from "next-auth/react"
+
+const DEMO_USER = {
+  name: "Demo User",
+  email: "demo@example.com",
+  role: "Developer",
+  company: "Tech Corp",
+  location: "San Francisco, CA",
+  bio: "👋 Hi! I'm a demo user exploring this dashboard.",
+  image: "/placeholder-user.jpg",
+  connectedAccounts: {
+    facebook: true,
+    twitter: false,
+    instagram: true
+  }
+}
 
 export default function ProfilePage() {
-  const [isLoaded, setIsLoaded] = useState(false)
+  const { data: session } = useSession()
   const [animateAvatar, setAnimateAvatar] = useState(false)
+  const [uploadError, setUploadError] = useState("")
+  const fileInputRef = useRef(null)
   
+  // Initialize with session data if available, otherwise use demo data
+  const [formData, setFormData] = useState(() => ({
+    ...DEMO_USER,
+    ...(session?.user && {
+      name: session.user.name || DEMO_USER.name,
+      email: session.user.email || DEMO_USER.email,
+      image: session.user.image || DEMO_USER.image
+    })
+  }))
+  const [formErrors, setFormErrors] = useState({})
+  const [imagePreview, setImagePreview] = useState(formData.image)
+  const [isDirty, setIsDirty] = useState(false)
+
   useEffect(() => {
-    setIsLoaded(true)
-    
-    // Animate avatar after a delay
-    const timer = setTimeout(() => {
-      setAnimateAvatar(true)
-    }, 500)
-    
-    return () => clearTimeout(timer)
+    // Trigger avatar animation after a delay
+    setTimeout(() => setAnimateAvatar(true), 100)
   }, [])
 
+  // Update form data when session changes
+  useEffect(() => {
+    if (session?.user) {
+      setFormData(prev => ({
+        ...prev,
+        name: session.user.name || prev.name,
+        email: session.user.email || prev.email,
+        image: session.user.image || prev.image
+      }))
+      setImagePreview(session.user.image || prev.image)
+    }
+  }, [session])
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp']
+    if (!validTypes.includes(file.type)) {
+      setUploadError("Please upload a valid image (JPG, PNG, or WebP)")
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image must be smaller than 5MB")
+      return
+    }
+
+    // Clear any previous errors
+    setUploadError("")
+    setIsDirty(true)
+
+    // Create URL for preview
+    const previewUrl = URL.createObjectURL(file)
+    setImagePreview(previewUrl)
+
+    // Clean up the URL when component unmounts
+    return () => URL.revokeObjectURL(previewUrl)
+  }
+
+  const validateField = (name, value) => {
+    const errors = { ...formErrors }
+    
+    switch (name) {
+      case "name":
+        if (!value.trim()) {
+          errors.name = "Full name is required"
+        } else if (value.length < 2) {
+          errors.name = "Name must be at least 2 characters long"
+        } else {
+          delete errors.name
+        }
+        break
+        
+      case "email":
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!value.trim()) {
+          errors.email = "Email is required"
+        } else if (!emailRegex.test(value)) {
+          errors.email = "Please enter a valid email address"
+        } else {
+          delete errors.email
+        }
+        break
+        
+      default:
+        break
+    }
+    
+    setFormErrors(errors)
+  }
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setFormData(prev => ({ ...prev, [name]: value }))
+    setIsDirty(true)
+    validateField(name, value)
+  }
+
+  const handleConnectedAccountToggle = (platform) => {
+    setFormData(prev => ({
+      ...prev,
+      connectedAccounts: {
+        ...prev.connectedAccounts,
+        [platform.toLowerCase()]: !prev.connectedAccounts[platform.toLowerCase()]
+      }
+    }))
+    setIsDirty(true)
+  }
+
+  const handleSave = async () => {
+    // This is where you would integrate with your backend
+    console.log('Saving profile changes:', { formData, imagePreview })
+    setIsDirty(false)
+  }
+
   return (
-    <div className="flex flex-col gap-8 py-6">
-      <div className={`transition-opacity duration-500 px-1 ${isLoaded ? 'opacity-100' : 'opacity-0'}`}>
-        <h1 className="text-3xl font-bold tracking-tight animate-slide-in mb-2">Profile</h1>
-        <p className="text-muted-foreground animate-slide-in stagger-1">Manage your account settings and connected platforms</p>
-      </div>
-
-      <div className="grid gap-8 md:grid-cols-2 animate-grid">
-        <Card className="hover-lift">
-          <CardHeader className="px-6 pt-6">
-            <CardTitle className="animate-fade-in text-xl">Personal Information</CardTitle>
-            <CardDescription className="animate-fade-in stagger-1">Update your personal details and preferences</CardDescription>
-          </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <div className="flex flex-col items-center gap-6 sm:flex-row">
-              <Avatar className={`h-24 w-24 ring-2 ring-border transition-all duration-700 ${animateAvatar ? 'scale-100 rotate-0' : 'scale-0 rotate-45'}`}>
-                <AvatarImage src={userData.avatar || "/placeholder.svg"} alt={userData.name} />
-                <AvatarFallback>{userData.name.charAt(0)}</AvatarFallback>
+    <div className="container mx-auto py-6 space-y-8 animate-in fade-in-50">
+      <Card className="max-w-4xl mx-auto">
+        <CardHeader>
+          <CardTitle>Profile</CardTitle>
+          <CardDescription>
+            Manage your profile information and connected accounts.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Profile Image Section */}
+          <div className="flex flex-col items-center space-y-4">
+            <div className="relative group">
+              <Avatar 
+                className={cn(
+                  "h-32 w-32 transition-all duration-300",
+                  animateAvatar ? "scale-100 opacity-100" : "scale-95 opacity-0",
+                  "group-hover:ring-4 ring-offset-2 ring-offset-background ring-primary/20"
+                )}
+              >
+                <AvatarImage 
+                  src={imagePreview} 
+                  alt={formData.name}
+                  className="object-cover"
+                />
+                <AvatarFallback className="bg-accent/10 font-medium text-accent-foreground text-2xl">
+                  {formData.name.split(" ").map(n => n[0]).join("")}
+                </AvatarFallback>
               </Avatar>
-              <div className="flex-1 space-y-2 text-center sm:text-left animate-fade-in stagger-2">
-                <h3 className="text-xl font-semibold">{userData.name}</h3>
-                <p className="text-sm text-muted-foreground">{userData.email}</p>
-                <p className="text-sm text-muted-foreground">
-                  {userData.role} at {userData.company}
-                </p>
-              </div>
-              <Button variant="outline" size="sm" className="shrink-0 button-pop animate-fade-in stagger-3">
-                Change Avatar
+              <Button
+                size="icon"
+                variant="outline"
+                className="absolute bottom-0 right-0 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Camera className="h-4 w-4" />
+                <span className="sr-only">Change profile picture</span>
               </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="hidden"
+                onChange={handleImageUpload}
+              />
             </div>
+            {uploadError && (
+              <Alert variant="destructive" className="max-w-md">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>{uploadError}</AlertDescription>
+              </Alert>
+            )}
+          </div>
 
-            <Separator className="my-8" />
+          <Separator />
 
-            <div className="space-y-6 animate-list">
-              <div className="grid gap-3">
-                <Label htmlFor="name" className="animate-fade-in">Full Name</Label>
-                <Input
-                  id="name"
-                  defaultValue={userData.name}
-                  className="input-focus"
-                />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="email" className="animate-fade-in">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  defaultValue={userData.email}
-                  className="input-focus"
-                />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="role" className="animate-fade-in">Role</Label>
-                <Input
-                  id="role"
-                  defaultValue={userData.role}
-                  className="input-focus"
-                />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="company" className="animate-fade-in">Company</Label>
-                <Input
-                  id="company"
-                  defaultValue={userData.company}
-                  className="input-focus"
-                />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="location" className="animate-fade-in">Location</Label>
-                <Input
-                  id="location"
-                  defaultValue={userData.location}
-                  className="input-focus"
-                />
-              </div>
-              <div className="grid gap-3">
-                <Label htmlFor="bio" className="animate-fade-in">Bio</Label>
-                <Input
-                  id="bio"
-                  defaultValue={userData.bio}
-                  className="input-focus"
-                />
-              </div>
-              <Button className="w-full sm:w-auto button-pop hover-glow">Save Changes</Button>
+          {/* Profile Form */}
+          <div className="grid gap-6 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="name">Full Name</Label>
+              <Input
+                id="name"
+                name="name"
+                placeholder="Enter your name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className={cn(formErrors.name && "border-destructive")}
+              />
+              {formErrors.name && (
+                <p className="text-sm text-destructive">{formErrors.name}</p>
+              )}
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={handleInputChange}
+                className={cn(formErrors.email && "border-destructive")}
+              />
+              {formErrors.email && (
+                <p className="text-sm text-destructive">{formErrors.email}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="role">Role</Label>
+              <Input
+                id="role"
+                name="role"
+                placeholder="Your role"
+                value={formData.role}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company">Company</Label>
+              <Input
+                id="company"
+                name="company"
+                placeholder="Company name"
+                value={formData.company}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                name="location"
+                placeholder="Your location"
+                value={formData.location}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
 
-        <div className="space-y-8">
-          <Card className="hover-lift">
-            <CardHeader className="px-6 pt-6">
-              <CardTitle className="animate-fade-in text-xl">Connected Accounts</CardTitle>
-              <CardDescription className="animate-fade-in stagger-1">Manage your connected social media accounts</CardDescription>
-            </CardHeader>
-            <CardContent className="px-6 pb-6">
-              <div className="space-y-5">
-                {[
-                  { platform: 'Twitter', icon: Twitter, color: '#1DA1F2', connected: true },
-                  { platform: 'Instagram', icon: Instagram, color: '#E1306C', connected: true },
-                  { platform: 'Facebook', icon: Facebook, color: '#4267B2', connected: false },
-                ].map((account) => {
-                  const Icon = account.icon
-                  return (
-                    <div key={account.platform} className="flex items-center justify-between space-x-4 p-3 rounded-lg hover:bg-accent/10 transition-colors">
-                      <div className="flex items-center space-x-4">
-                        <div className={`p-2.5 rounded-full transition-colors duration-300`} style={{ backgroundColor: `${account.color}20` }}>
-                          <Icon className={`h-5 w-5 transition-transform duration-300 hover:scale-110`} style={{ color: account.color }} />
-                        </div>
-                        <div className="space-y-1.5">
-                          <p className="text-sm font-medium leading-none">{account.platform}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {account.connected ? 'Connected' : 'Not connected'}
-                          </p>
-                        </div>
+          <div className="space-y-2">
+            <Label htmlFor="bio">Bio</Label>
+            <textarea
+              id="bio"
+              name="bio"
+              rows={4}
+              placeholder="Tell us about yourself"
+              value={formData.bio}
+              onChange={handleInputChange}
+              className="w-full min-h-[100px] rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+          </div>
+
+          <Separator />
+
+          {/* Connected Accounts */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-medium">Connected Accounts</h3>
+            <div className="space-y-4">
+              {[
+                { name: "Facebook", icon: Facebook },
+                { name: "Twitter", icon: Twitter },
+                { name: "Instagram", icon: Instagram }
+              ].map(({ name, icon: Icon }) => {
+                const platform = name.toLowerCase()
+                const connected = formData.connectedAccounts[platform]
+                return (
+                  <div key={name} className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4">
+                      <Icon className="h-6 w-6 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm font-medium">{name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {connected ? "Connected" : "Not Connected"}
+                        </p>
                       </div>
-                      <Button
-                        variant={account.connected ? "destructive" : "outline"}
-                        size="sm"
-                        className="button-pop"
-                      >
-                        {account.connected ? 'Disconnect' : 'Connect'}
-                      </Button>
                     </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="hover-lift">
-            <CardHeader className="px-6 pt-6">
-              <CardTitle className="animate-fade-in text-xl">Account Settings</CardTitle>
-              <CardDescription className="animate-fade-in stagger-1">Manage your account preferences</CardDescription>
-            </CardHeader>
-            <CardContent className="px-6 pb-6">
-              <div className="space-y-5">
-                {[
-                  {
-                    title: 'Profile Visibility',
-                    description: 'Make your profile visible to everyone',
-                    enabled: true,
-                  },
-                  {
-                    title: 'Email Notifications',
-                    description: 'Receive email notifications about activity',
-                    enabled: true,
-                  },
-                  {
-                    title: 'Push Notifications',
-                    description: 'Receive push notifications about activity',
-                    enabled: false,
-                  },
-                  {
-                    title: 'Activity Status',
-                    description: 'Show when you\'re active on the platform',
-                    enabled: true,
-                  },
-                ].map((setting) => (
-                  <div
-                    key={setting.title}
-                    className="flex items-center justify-between space-x-4 p-3 rounded-lg hover:bg-accent/10 transition-colors"
-                  >
-                    <div className="space-y-1.5">
-                      <p className="text-sm font-medium leading-none">{setting.title}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {setting.description}
-                      </p>
-                    </div>
-                    <Switch
-                      checked={setting.enabled}
-                      className="switch-toggle"
+                    <Switch 
+                      checked={connected}
+                      onCheckedChange={() => handleConnectedAccountToggle(name)}
                     />
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <Button
+              size="lg"
+              disabled={Object.keys(formErrors).length > 0 || !isDirty}
+              className="w-full sm:w-auto"
+              onClick={handleSave}
+            >
+              Save Changes
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }

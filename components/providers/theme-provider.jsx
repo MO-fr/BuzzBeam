@@ -13,36 +13,57 @@ export function ThemeProvider({ children, defaultTheme = "dark", storageKey = "t
   const [theme, setTheme] = useState(defaultTheme)
   const [mounted, setMounted] = useState(false)
 
+  // Apply theme changes with smooth transitions
   useEffect(() => {
     if (!mounted) return
     const root = window.document.documentElement
     
+    // Add transition class before making changes
     root.classList.add("theme-transition")
-    root.classList.remove("dark")
+
+    // Clean up previous theme state
+    root.classList.remove("dark", "theme-tiktok", "theme-instagram", "theme-twitter")
     root.removeAttribute("data-theme")
 
-    if (theme === "dark") {
-      root.classList.add("dark")
-    } else {
-      root.setAttribute("data-theme", theme)
+    // Apply new theme
+    switch (theme) {
+      case "dark":
+        root.classList.add("dark")
+        break
+      case "tiktok":
+      case "instagram":
+      case "twitter":
+        root.setAttribute("data-theme", theme)
+        // Add platform-specific theme class for additional styling
+        root.classList.add(`theme-${theme}`)
+        break
+      default:
+        root.classList.add("dark")
     }
 
-    requestAnimationFrame(() => {
-      root.classList.remove("theme-transition")
-    })
+    // Remove transition class after changes
+    const transitionTimeout = setTimeout(() => {
+      // Use requestAnimationFrame to ensure transitions are applied
+      requestAnimationFrame(() => {
+        root.classList.remove("theme-transition")
+      })
+    }, 150) // Allow time for transitions to complete
+
+    return () => clearTimeout(transitionTimeout)
   }, [theme, mounted])
 
+  // Initialize theme from localStorage or default
   useEffect(() => {
     const savedTheme = localStorage.getItem(storageKey)
     const validThemes = ["dark", "tiktok", "instagram", "twitter"]
     if (savedTheme && validThemes.includes(savedTheme)) {
       setTheme(savedTheme)
     } else {
-      setTheme("dark")
-      localStorage.setItem(storageKey, "dark")
+      setTheme(defaultTheme)
+      localStorage.setItem(storageKey, defaultTheme)
     }
     setMounted(true)
-  }, [storageKey])
+  }, [storageKey, defaultTheme])
 
   const value = {
     theme,
@@ -59,6 +80,7 @@ export function ThemeProvider({ children, defaultTheme = "dark", storageKey = "t
       defaultTheme={defaultTheme}
       enableSystem={false}
       attribute="class"
+      value={{ ...props.value, theme }}
     >
       <ThemeProviderContext.Provider value={value}>
         {children}

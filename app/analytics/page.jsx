@@ -35,9 +35,39 @@ export default function AnalyticsPage() {
           setAnalyticsData(result.data)
         } else {
           console.error('Error fetching analytics:', result.error)
+          setAnalyticsData({
+            metrics: {
+              posts: 0,
+              twitter: { followers: 0, engagement: 0 },
+              instagram: { followers: 0, engagement: 0 },
+              facebook: { followers: 0, engagement: 0 }
+            },
+            engagementTrends: Array(7).fill({
+              date: new Date().toLocaleDateString(),
+              twitter: 0,
+              instagram: 0,
+              facebook: 0
+            }),
+            audienceAge: [],
+            audienceGender: [],
+            performanceByTime: [],
+            impressions: []
+          })
         }
       } catch (error) {
         console.error('Error fetching analytics:', error)
+        setAnalyticsData({
+          metrics: {
+            posts: 0,
+            twitter: { followers: 0, engagement: 0 },
+            instagram: { followers: 0, engagement: 0 },
+            facebook: { followers: 0, engagement: 0 }
+          },
+          audienceAge: [],
+          audienceGender: [],
+          performanceByTime: [],
+          impressions: []
+        })
       } finally {
         setLoading(false)
       }
@@ -48,54 +78,8 @@ export default function AnalyticsPage() {
     }
   }, [platform, timeframe, session])
 
-  const formatPercentage = (num) => {
-    return new Intl.NumberFormat('en-US', {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1
-    }).format(num) + '%'
-  }
-
-  // Process analytics data for charts
-  const processAnalyticsForCharts = () => {
-    if (!analyticsData || typeof analyticsData !== 'object') return {
-      platformDistribution: {},
-      engagementTrends: {}
-    };
-  
-    const data = Object.values(analyticsData);
-  
-    return {
-      platformDistribution: data.reduce((acc, item) => {
-        if (!acc[item.platform]) acc[item.platform] = 0;
-        acc[item.platform] += item.metrics?.followers || 0;
-        return acc;
-      }, {}),
-  
-      engagementTrends: data.reduce((acc, item) => {
-        const date = new Date(item.timestamp).toLocaleDateString();
-        if (!acc[date]) acc[date] = { date };
-        acc[date][item.platform] = item.metrics?.engagement || 0;
-        return acc;
-      }, {})
-    };
-  };
-  
-
-  const chartData = processAnalyticsForCharts()
-
-  // Transform data for platform distribution pie chart
-  const platformData = chartData?.platformDistribution ? 
-    Object.entries(chartData.platformDistribution).map(([platform, value]) => ({
-      name: platform,
-      value,
-      color: chartColors.platforms[platform]
-    })) : []
-
-  // Transform data for engagement trends
-  const engagementData = chartData?.engagementTrends ?
-    Object.values(chartData.engagementTrends).sort((a, b) => 
-      new Date(a.date) - new Date(b.date)
-    ) : []
+  // Use the pre-generated engagement trends data
+  const engagementData = analyticsData?.engagementTrends || [];
 
   return (
     <div className="flex flex-col gap-4">
@@ -130,11 +114,11 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 animate-grid">
+      <div className="grid gap-4 md:grid-cols-2 animate-grid">
         <Card className="hover-lift">
           <CardHeader className="px-6 pt-6 pb-2">
-            <CardTitle className="animate-fade-in">Platform Distribution</CardTitle>
-            <CardDescription className="animate-fade-in stagger-1">Distribution of your audience across platforms</CardDescription>
+            <CardTitle className="animate-fade-in">Audience Demographics</CardTitle>
+            <CardDescription className="animate-fade-in stagger-1">Age distribution of your audience</CardDescription>
           </CardHeader>
           <CardContent className="px-6 pb-6">
             {loading ? (
@@ -144,42 +128,6 @@ export default function AnalyticsPage() {
             ) : (
               <div className="h-[300px] w-full transition-all duration-300 hover:scale-[1.02]">
                 <ResponsiveContainer>
-                  <PieChart>
-                    <Pie
-                      data={platformData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={60}
-                      outerRadius={80}
-                      paddingAngle={5}
-                      dataKey="value"
-                    >
-                      {platformData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip formatter={(value) => formatPercentage(value)} />
-                    <Legend />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card className="hover-lift">
-          <CardHeader className="px-6 pt-6 pb-2">
-            <CardTitle className="animate-fade-in">Audience Demographics</CardTitle>
-            <CardDescription className="animate-fade-in stagger-1">Age distribution of your audience</CardDescription>
-          </CardHeader>
-          <CardContent className="px-6 pb-6">
-            <div className={`h-[300px] transition-opacity duration-700 ${chartVisible ? "opacity-100" : "opacity-0"}`}>
-              <Suspense
-                fallback={
-                  <div className="flex h-full items-center justify-center animate-pulse-subtle">Loading chart...</div>
-                }
-              >
-                <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={analyticsData?.audienceAge || []}
                     margin={{
@@ -208,8 +156,8 @@ export default function AnalyticsPage() {
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
-              </Suspense>
-            </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -334,10 +282,10 @@ export default function AnalyticsPage() {
                   <LineChart
                     data={engagementData}
                     margin={{
-                      top: 5,
-                      right: 10,
-                      left: 10,
-                      bottom: 0,
+                      top: 20,
+                      right: 20,
+                      left: 20,
+                      bottom: 20,
                     }}
                   >
                     <CartesianGrid strokeDasharray="3 3" />

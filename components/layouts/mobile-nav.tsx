@@ -7,16 +7,10 @@ import Image from "next/image"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Button } from "@/components/ui/button"
-import { Menu, X, Home, BarChart3, MessageSquare, User, Settings } from "lucide-react"
+import { Menu, X } from "lucide-react"
 import { useIsMobile } from "@/hooks/use-mobile"
-
-export const navItems = [
-  { title: "Dashboard", href: "/", icon: Home },
-  { title: "Analytics", href: "/analytics", icon: BarChart3 },
-  { title: "Messages", href: "/messages", icon: MessageSquare },
-  { title: "Profile", href: "/profile", icon: User },
-  { title: "Settings", href: "/settings", icon: Settings },
-]
+import { ThemeToggle } from "@/components/features/theme-toggle"
+import { navItems } from "@/components/layouts/app-shell"
 
 export function MobileNav() {
   const [open, setOpen] = useState(false)
@@ -111,28 +105,34 @@ export function MobileNav() {
           >
             <X className="h-5 w-5" />
           </Button>
+        </div>        <div className="flex flex-col justify-between h-[calc(100vh-4rem)]">
+          <nav className="space-y-1 p-4">
+            {navItems.map((item, index) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={navItemClasses(pathname === item.href)}
+                onClick={() => setOpen(false)}
+                style={{ 
+                  animationDelay: `${index * 50}ms`,
+                  animation: "slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards"
+                }}
+              >
+                <item.icon className={cn(
+                  "h-5 w-5 transition-transform duration-200",
+                  pathname === item.href ? "text-accent-foreground" : "text-muted-foreground"
+                )} />
+                <span>{item.title}</span>
+              </Link>
+            ))}
+          </nav>
+          <div className="p-4 border-t">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium">Theme</span>
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
-
-        <nav className="space-y-1 p-4">
-          {navItems.map((item, index) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={navItemClasses(pathname === item.href)}
-              onClick={() => setOpen(false)}
-              style={{ 
-                animationDelay: `${index * 50}ms`,
-                animation: "slideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards"
-              }}
-            >
-              <item.icon className={cn(
-                "h-5 w-5 transition-transform duration-200",
-                pathname === item.href ? "text-accent-foreground" : "text-muted-foreground"
-              )} />
-              <span>{item.title}</span>
-            </Link>
-          ))}
-        </nav>
       </SheetContent>
     </Sheet>
   )
