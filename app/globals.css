@@ -115,10 +115,11 @@
     --input: 203 89% 90%;
     --ring: 203 89% 53%;
   }
-
   [data-theme="instagram"] {
     --background: 0 0% 100%;
     --foreground: 0 0% 0%;
+    --accent: 330 100% 50%;
+    --accent-foreground: 0 0% 100%;
     --card: 0 0% 100%;
     --card-foreground: 0 0% 0%;
     --popover: 0 0% 100%;

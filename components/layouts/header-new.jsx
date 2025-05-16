@@ -43,7 +43,7 @@ export function Header() {
           buttonText: "text-pink-500",
           avatarBorder: "border-pink-500",
           dropdownHeaderBg: "bg-gradient-to-r from-yellow-500 via-pink-600 to-purple-700",
-          menuItemHover: "hover:bg-gray-100 focus:bg-gray-100",
+          menuItemHover: "hover:bg-pink-50 hover:text-pink-500 focus:bg-pink-50 focus:text-pink-500",
         }
       case "twitter":
         return {
