@@ -23,5 +23,6 @@ export const config = {
     "/messages/:path*",
     "/profile/:path*",
     "/settings/:path*",
+    "/debug/:path*", // Add debug route to protected routes
   ],
 };

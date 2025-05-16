@@ -44,7 +44,8 @@ export default function RootLayout({ children }) {
           <ThemeProvider defaultTheme="dark" enableSystem={false}>
             <AppShell>{children}</AppShell>
             {/* Debug tool to help with profile image issues */}
-            {process.env.NODE_ENV !== 'production' && <ProfileDebugger />}
+            {/* Only include ProfileDebugger in development */}
+            {process.env.NODE_ENV === 'development' && <ProfileDebugger />}
           </ThemeProvider>
         </NextAuthProvider>
       </body>
