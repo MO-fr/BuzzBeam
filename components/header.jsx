@@ -1,12 +1,15 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
-import { Search, Bell, User } from "lucide-react"
+import { useEffect } from "react"
+import { Search, Bell } from "lucide-react"
 import { useTheme } from "@/components/theme-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from "next/image"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { useProfileImage } from "@/hooks/use-profile-image"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,9 +22,14 @@ import {
 export function Header() {
   const { data: session, status } = useSession()
   const { theme } = useTheme()
+  const { profileImage } = useProfileImage()
+  
+  // Force rerender when profile image changes by listening to profileImage state
+  useEffect(() => {}, [profileImage])
 
   const getThemeClasses = () => {
-    const baseClasses = {      buttonBorder: "border-primary",
+    const baseClasses = {
+      buttonBorder: "border-primary",
       buttonText: "text-primary font-medium",
       avatarBorder: "border-primary/40",
       menuItemHover: "hover:bg-accent focus:bg-accent",
@@ -91,27 +99,29 @@ export function Header() {
             <ThemeToggle />
             {status === "authenticated" && session?.user ? (
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>                  <Button
+                <DropdownMenuTrigger asChild>
+                  <Button
                     className={`group relative h-10 w-10 rounded-full overflow-hidden border-[3px] ${themeClasses.avatarBorder} p-0 transition-all duration-300 hover:scale-105 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`}
                     aria-label="User menu"
                   >
                     <div className="absolute inset-0 bg-gradient-to-br from-background/60 to-background/30 transition-opacity group-hover:opacity-50" />
-                    <Avatar className="h-full w-full font-semibold">
-                      <AvatarImage 
-                        src={session.user.image || "/placeholder-user.jpg"}
-                        alt={session.user.name || "User avatar"}
-                        className="aspect-square object-cover"
-                        referrerPolicy="no-referrer"
-                        loading="eager"
-                        onError={(e) => {
-                          e.currentTarget.src = "/placeholder-user.jpg"
-                        }}
-                      />
-                      <AvatarFallback 
-                        className="bg-accent/10 text-accent-foreground"
-                        delayMs={200}
+                    <Avatar className="h-full w-full">                      <AvatarImage 
+                        asChild
                       >
-                        <User className="h-4 w-4" />
+                        <Image 
+                          src={profileImage || session.user.image || "/placeholder-user.jpg"}
+                          alt={session.user.name || "User avatar"}
+                          className="aspect-square object-cover"
+                          referrerPolicy="no-referrer"
+                          width={40}
+                          height={40}
+                          priority
+                        />
+                      </AvatarImage>
+                      <AvatarFallback 
+                        className="bg-primary/10 text-primary-foreground text-sm font-medium"
+                      >
+                        {session.user.name?.split(" ").map(n => n[0]).join("")}
                       </AvatarFallback>
                     </Avatar>
                   </Button>

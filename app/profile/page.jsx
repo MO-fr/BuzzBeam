@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
+import { useSession } from "next-auth/react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -8,10 +9,13 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Switch } from "@/components/ui/switch"
 import { Separator } from "@/components/ui/separator"
-import { AlertCircle, Camera, Facebook, Instagram, Twitter } from "lucide-react"
+import { AlertCircle, Camera, Facebook, Instagram, Twitter, X } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { cn } from "@/lib/utils"
-import { useSession } from "next-auth/react"
+import Image from "next/image"
+import { ImageEditorDialog } from "@/components/features/image-editor-dialog"
+import { ImagePreviewDialog } from "@/components/features/image-preview-dialog"
+import { useProfileImage } from "@/hooks/use-profile-image"
 
 const DEMO_USER = {
   name: "Demo User",
@@ -20,7 +24,6 @@ const DEMO_USER = {
   company: "Tech Corp",
   location: "San Francisco, CA",
   bio: "👋 Hi! I'm a demo user exploring this dashboard.",
-  image: "/placeholder-user.jpg",
   connectedAccounts: {
     facebook: true,
     twitter: false,
@@ -33,6 +36,11 @@ export default function ProfilePage() {
   const [animateAvatar, setAnimateAvatar] = useState(false)
   const [uploadError, setUploadError] = useState("")
   const fileInputRef = useRef(null)
+  const { profileImage, setProfileImage, removeProfileImage, hasCustomImage } = useProfileImage()
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [localAvatar, setLocalAvatar] = useState(null)
   
   // Initialize with session data if available, otherwise use demo data
   const [formData, setFormData] = useState(() => ({
@@ -40,11 +48,9 @@ export default function ProfilePage() {
     ...(session?.user && {
       name: session.user.name || DEMO_USER.name,
       email: session.user.email || DEMO_USER.email,
-      image: session.user.image || DEMO_USER.image
     })
   }))
   const [formErrors, setFormErrors] = useState({})
-  const [imagePreview, setImagePreview] = useState(formData.image)
   const [isDirty, setIsDirty] = useState(false)
 
   useEffect(() => {
@@ -59,11 +65,16 @@ export default function ProfilePage() {
         ...prev,
         name: session.user.name || prev.name,
         email: session.user.email || prev.email,
-        image: session.user.image || prev.image
       }))
-      setImagePreview(session.user.image || prev.image)
+      
+      // Update local avatar with Google image when session changes
+      if (!hasCustomImage && session.user.image) {
+        setLocalAvatar(session.user.image)
+      } else if (hasCustomImage && profileImage) {
+        setLocalAvatar(profileImage)
+      }
     }
-  }, [session])
+  }, [session, hasCustomImage, profileImage])
 
   const handleImageUpload = (e) => {
     const file = e.target.files?.[0]
@@ -82,16 +93,37 @@ export default function ProfilePage() {
       return
     }
 
-    // Clear any previous errors
     setUploadError("")
+    setSelectedFile(file)
+    setIsEditorOpen(true)
+  }
+
+  const handleSaveImage = (imageDataUrl) => {
+    // Save to Context
+    setProfileImage(imageDataUrl)
+    
+    // Update local state to immediately show change
+    setLocalAvatar(imageDataUrl)
+    
+    // Flag form as dirty for "Save Changes" button
     setIsDirty(true)
+    
+    // Debug to verify the update happened
+    console.log("Profile image saved:", imageDataUrl.substring(0, 50) + "...")
+  }
 
-    // Create URL for preview
-    const previewUrl = URL.createObjectURL(file)
-    setImagePreview(previewUrl)
-
-    // Clean up the URL when component unmounts
-    return () => URL.revokeObjectURL(previewUrl)
+  const handleRemoveImage = () => {
+    // Clear from Context
+    removeProfileImage()
+    
+    // Update local state to immediately show change
+    setLocalAvatar(session?.user?.image || null)
+    
+    // Flag form as dirty for "Save Changes" button
+    setIsDirty(true)
+    
+    // Debug
+    console.log("Profile image removed, reverting to Google image")
   }
 
   const validateField = (name, value) => {
@@ -146,7 +178,7 @@ export default function ProfilePage() {
 
   const handleSave = async () => {
     // This is where you would integrate with your backend
-    console.log('Saving profile changes:', { formData, imagePreview })
+    console.log('Saving profile changes:', { formData, profileImage })
     setIsDirty(false)
   }
 
@@ -165,29 +197,48 @@ export default function ProfilePage() {
             <div className="relative group">
               <Avatar 
                 className={cn(
-                  "h-32 w-32 transition-all duration-300",
+                  "h-32 w-32 transition-all duration-300 cursor-pointer",
                   animateAvatar ? "scale-100 opacity-100" : "scale-95 opacity-0",
                   "group-hover:ring-4 ring-offset-2 ring-offset-background ring-primary/20"
                 )}
+                onClick={() => profileImage && setIsPreviewOpen(true)}
               >
-                <AvatarImage 
-                  src={imagePreview} 
-                  alt={formData.name}
-                  className="object-cover"
-                />
-                <AvatarFallback className="bg-accent/10 font-medium text-accent-foreground text-2xl">
+                <AvatarImage asChild>
+                  <Image 
+                    src={localAvatar || profileImage || "/placeholder-user.jpg"}
+                    alt={formData.name}
+                    className="object-cover"
+                    width={128}
+                    height={128}
+                    priority
+                  />
+                </AvatarImage>
+                <AvatarFallback className="bg-primary/10 text-primary-foreground text-2xl">
                   {formData.name.split(" ").map(n => n[0]).join("")}
                 </AvatarFallback>
               </Avatar>
-              <Button
-                size="icon"
-                variant="outline"
-                className="absolute bottom-0 right-0 h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Camera className="h-4 w-4" />
-                <span className="sr-only">Change profile picture</span>
-              </Button>
+              <div className="absolute -bottom-2 right-0 flex gap-2">
+                <Button
+                  size="icon"
+                  variant="outline"
+                  className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Camera className="h-4 w-4" />
+                  <span className="sr-only">Change profile picture</span>
+                </Button>
+                {hasCustomImage && (
+                  <Button
+                    size="icon"
+                    variant="destructive"
+                    className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={handleRemoveImage}
+                  >
+                    <X className="h-4 w-4" />
+                    <span className="sr-only">Remove profile picture</span>
+                  </Button>
+                )}
+              </div>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -329,6 +380,20 @@ export default function ProfilePage() {
           </div>
         </CardContent>
       </Card>
+
+      <ImageEditorDialog
+        open={isEditorOpen}
+        onOpenChange={setIsEditorOpen}
+        imageFile={selectedFile}
+        onSave={handleSaveImage}
+      />
+
+      <ImagePreviewDialog
+        open={isPreviewOpen}
+        onOpenChange={setIsPreviewOpen}
+        imageUrl={profileImage || "/placeholder-user.jpg"}
+        userName={formData.name}
+      />
     </div>
   )
 }

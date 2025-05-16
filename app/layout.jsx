@@ -2,6 +2,7 @@ import { Inter } from "next/font/google"
 import { NextAuthProvider } from "@/components/providers/next-auth-provider"
 import { ThemeProvider } from "@/components/providers/theme-provider"
 import { AppShell } from "@/components/layouts/app-shell"
+import { ProfileDebugger } from "@/components/features/profile-debugger"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"] })
@@ -38,11 +39,12 @@ export default function RootLayout({ children }) {
     `,
           }}
         />
-      </head>
-      <body className={inter.className}>
+      </head>      <body className={inter.className}>
         <NextAuthProvider>
           <ThemeProvider defaultTheme="dark" enableSystem={false}>
             <AppShell>{children}</AppShell>
+            {/* Debug tool to help with profile image issues */}
+            {process.env.NODE_ENV !== 'production' && <ProfileDebugger />}
           </ThemeProvider>
         </NextAuthProvider>
       </body>

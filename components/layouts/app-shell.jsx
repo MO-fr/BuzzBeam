@@ -5,9 +5,9 @@ import Image from "next/image"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { MobileNav } from "./mobile-nav"
-import { Header } from "@/components/header"
-import { useTheme } from "@/components/theme-provider"
-import { PageTransition } from "@/components/page-transition"
+import { Header } from "@/components/layouts/header-new"
+import { useTheme } from "@/components/providers/theme-provider"
+import { PageTransition } from "@/components/layouts/page-transition"
 import { Home, BarChart3, MessageSquare, User, Settings } from "lucide-react"
 
 const navItems = [

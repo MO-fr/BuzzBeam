@@ -37,3 +37,7 @@ next-env.d.ts
 .env*.local
 
 copilot-instructions.md
+
+# other files
+.git reset --hardgit reset --hard 70a98a7
+.debug/

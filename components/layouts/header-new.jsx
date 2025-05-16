@@ -1,16 +1,14 @@
 "use client"
 
 import { useSession, signOut } from "next-auth/react"
-import { useEffect } from "react"
-import Image from "next/image"
-import { Search } from "lucide-react"
-import { useTheme } from "@/components/providers/theme-provider"
 import { useProfileImage } from "@/hooks/use-profile-image"
+import Image from "next/image"
+import { Search, Bell } from "lucide-react"
+import { useTheme } from "@/components/providers/theme-provider"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ThemeToggle } from "@/components/features/theme-toggle"
-import { Bell } from "lucide-react"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,15 +18,11 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export function Header() {
+export function Header() {  
   const { data: session } = useSession()
   const { theme } = useTheme()
   const { profileImage } = useProfileImage()
 
-  // Rerender when profile image changes
-  useEffect(() => {}, [profileImage])
-
-  // Get theme-specific classes
   const getThemeClasses = () => {
     switch (theme) {
       case "tiktok":
@@ -121,10 +115,7 @@ export function Header() {
                   className={`h-9 w-9 rounded-full border-2 ${themeClasses.avatarBorder} p-0.5 transition-all duration-300 hover:scale-105`}
                 >
                   <Avatar className="h-full w-full">
-                    <AvatarImage
-                      asChild
-                    >
-                      <Image
+                    <AvatarImage asChild>                      <Image
                         src={profileImage || session?.user?.image || "/placeholder-user.jpg"}
                         alt={session?.user?.name || "User"}
                         width={36}

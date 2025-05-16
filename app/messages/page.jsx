@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -128,7 +129,14 @@ export default function MessagesPage() {
                       className="flex cursor-pointer items-center gap-3 py-3 hover:bg-muted/50 transition-all duration-300 hover:translate-x-1"
                     >
                       <Avatar className="h-10 w-10 transition-transform duration-300 hover:scale-110">
-                        <AvatarImage src={message.avatar || "/placeholder.svg"} alt={message.sender} />
+                        <AvatarImage asChild>
+                      <Image
+                        src={message.avatar || "/placeholder.svg"}
+                        alt={message.sender}
+                        width={32}
+                        height={32}
+                      />
+                    </AvatarImage>
                         <AvatarFallback>{message.sender.charAt(0)}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -165,7 +173,15 @@ export default function MessagesPage() {
           <CardHeader className="border-b px-6 py-4 animate-fade-in">
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 animate-bounce-in">
-                <AvatarImage src="/placeholder.svg" alt="Alex Johnson" />
+                <AvatarImage asChild>
+                  <Image
+                    src="/placeholder.svg"
+                    alt="Alex Johnson"
+                    width={40}
+                    height={40}
+                    priority
+                  />
+                </AvatarImage>
                 <AvatarFallback>AJ</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
@@ -182,7 +198,14 @@ export default function MessagesPage() {
               {messages.map((msg, index) => (
                 <div key={index} className={`flex ${msg.isUser ? "flex-row-reverse" : ""} gap-3`}>
                   <Avatar className="h-8 w-8 shrink-0 animate-scale-in">
-                    <AvatarImage src={msg.avatar || "/placeholder.svg"} alt={msg.sender} />
+                    <AvatarImage asChild>
+                      <Image
+                        src={msg.avatar || "/placeholder.svg"}
+                        alt={msg.sender}
+                        width={32}
+                        height={32}
+                      />
+                    </AvatarImage>
                     <AvatarFallback>{msg.sender.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div className={`group relative max-w-[80%] ${msg.isUser ? "ml-12" : "mr-12"}`}>
