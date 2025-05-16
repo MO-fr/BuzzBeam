@@ -55,8 +55,7 @@ const authOptions = {
         }
       }
       return true
-    },
-    async session({ session }) {
+    },    async session({ session }) {
       try {
         await connect()
         
@@ -66,6 +65,7 @@ const authOptions = {
         if (user) {
           session.user.id = user._id.toString()
           session.user.role = user.role
+          session.user.image = user.image // Ensure image is included
           session.user.connectedAccounts = user.connectedAccounts
         }
         

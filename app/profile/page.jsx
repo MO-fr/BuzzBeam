@@ -68,10 +68,12 @@ export default function ProfilePage() {
       }))
       
       // Update local avatar with Google image when session changes
-      if (!hasCustomImage && session.user.image) {
-        setLocalAvatar(session.user.image)
-      } else if (hasCustomImage && profileImage) {
+      if (!hasCustomImage) {
+        setLocalAvatar(session.user.image || null)
+        console.log("Setting Google profile image:", session.user.image)
+      } else if (profileImage) {
         setLocalAvatar(profileImage)
+        console.log("Setting custom profile image:", profileImage)
       }
     }
   }, [session, hasCustomImage, profileImage])
