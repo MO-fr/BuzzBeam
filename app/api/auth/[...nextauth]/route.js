@@ -14,6 +14,10 @@ const authOptions = {
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     })
   ],
+  pages: {
+    signIn: '/auth/login',
+    error: '/auth/error',
+  },
   // Explicitly configure session handling
   session: {
     strategy: 'jwt',

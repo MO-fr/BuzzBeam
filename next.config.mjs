@@ -15,9 +15,16 @@ const nextConfig = {
   },
   reactStrictMode: true,
   swcMinify: true,
+  typescript: {
+    ignoreBuildErrors: false // Ensure type checking during build
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
+        fs: false,
+        dns: false,
+        net: false,
+        tls: false,
         ...config.resolve.fallback,
         punycode: false
       };
